@@ -4,8 +4,6 @@ use crate::components::{Position, Size};
 use crate::constants::{ARENA_HEIGHT, ARENA_WIDTH};
 
 pub fn pos_translation(mut window: Query<&mut Window>, mut q: Query<(&Position, &mut Transform)>) {
-    // x = 5
-    // x / 10 * 200 - 200 / 2 = 300
     fn convert(pos: f32, bound_window: f32, bound_game: f32) -> f32 {
         let tile_size = bound_window / bound_game; /* 64 if the window width is 1280 */
 
