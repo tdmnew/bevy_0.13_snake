@@ -1,10 +1,10 @@
 use bevy::prelude::*;
 use rand::random;
 
+use crate::components::{Food, Position, Size, SnakeHead, SnakeSegment};
 use crate::constants::{
     ARENA_HEIGHT, ARENA_WIDTH, FOOD_COLOR, SNAKE_HEAD_COLOR, SNAKE_SEGMENT_COLOR,
 };
-use crate::components::{Food, Position, Size, SnakeHead, SnakeSegment};
 use crate::resources::{FoodSpawnTimer, SnakeSegments};
 
 pub fn spawn_snake_head(commands: &mut Commands, position: Position) -> Entity {
@@ -49,23 +49,25 @@ pub fn spawn_snake(mut commands: Commands, mut segments: ResMut<SnakeSegments>) 
     ]);
 }
 
-pub fn spawn_food(mut commands: Commands, time: Res<Time>, mut config: ResMut<FoodSpawnTimer>) {
+pub fn spawn_food(mut commands: Commands, mut config: ResMut<FoodSpawnTimer>, time: Res<Time>) {
     config.timer.tick(time.delta());
 
-    if config.timer.finished() {
-        commands
-            .spawn(SpriteBundle {
-                sprite: Sprite {
-                    color: FOOD_COLOR,
-                    ..default()
-                },
-                ..default()
-            })
-            .insert(Food)
-            .insert(Position {
-                x: (random::<f32>() * ARENA_WIDTH as f32) as i32,
-                y: (random::<f32>() * ARENA_HEIGHT as f32) as i32,
-            })
-            .insert(Size::square(1.0));
+    if !config.timer.finished() {
+        return;
     }
+
+    commands
+        .spawn(SpriteBundle {
+            sprite: Sprite {
+                color: FOOD_COLOR,
+                ..default()
+            },
+            ..default()
+        })
+        .insert(Food)
+        .insert(Position {
+            x: (random::<f32>() * ARENA_WIDTH as f32) as i32,
+            y: (random::<f32>() * ARENA_HEIGHT as f32) as i32,
+        })
+        .insert(Size::square(1.0));
 }

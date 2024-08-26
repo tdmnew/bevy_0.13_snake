@@ -1,10 +1,6 @@
 use bevy::prelude::*;
 
-use crate::systems::events::*;
-use crate::systems::movement_interaction::*;
-use crate::systems::spawning::*;
-use crate::systems::translation_scale::*;
-
+use crate::systems::{events::*, interaction::*, movement::*, spawning::*, translation_scale::*};
 use crate::events::{GameOverEvent, GrowthEvent};
 use crate::resources::{FoodSpawnTimer, LastTailPosition, SnakeSegments};
 
@@ -15,9 +11,9 @@ mod resources;
 mod systems;
 
 /**
- * -------------------------------------------------
+ *  
  * Startup
- * -------------------------------------------------
+ *
  **/
 fn setup_camera(mut commands: Commands) {
     // Create a new 2D camera
