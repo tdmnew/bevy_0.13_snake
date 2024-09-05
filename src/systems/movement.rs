@@ -5,10 +5,46 @@ use crate::constants::{ARENA_HEIGHT, ARENA_WIDTH};
 use crate::events::GameOverEvent;
 use crate::resources::{LastTailPosition, SnakeSegments};
 
+/// Get Vec<Position> from SnakeSegment(<Vec<Entity>>)
+/// ex. (when snake is moving downwards) [
+///  SnakeHead::Position { x: 3: y: 4 },
+///  SnakeSegment::Position { x: 3: y: 5 },
+///  SnakeSegment::Position { x: 3: y: 6 }
+/// ]
+fn get_segment_positions(
+    segments: &Vec<Entity>,
+    positions_q: &mut Query<&mut Position>,
+) -> Vec<Position> {
+    segments
+        .iter()
+        .map(|e| *positions_q.get_mut(*e).unwrap())
+        .collect::<Vec<Position>>()
+}
+
+/// Update the position of each SnakeSegment to the SnakeHead/SnakeSegment position in front of it
+/// ex. Taking the original Vec<Entity> and performing .zip() with .skip(1): [
+///   (Position { x: 3, y: 4 }, Entity { x: 3: y: 5 }),
+///   (Position { x: 3, y: 5 }, Entity { x: 3: y: 6 })
+/// ]
+/// Segments following are now:
+/// [SnakeSegment::Position { x: 3, y: 4 },  and SnakeSegment::Position { x: 3, y: 5 }]
+fn update_segment_positions(
+    original_positions: &Vec<Position>,
+    segments: &Vec<Entity>,
+    positions_q: &mut Query<&mut Position>,
+) {
+    original_positions
+        .iter()
+        .zip(segments.iter().skip(1))
+        .for_each(|(pos, segment_entity)| *positions_q.get_mut(*segment_entity).unwrap() = *pos);
+}
+
+// Translate keyboard_input into Direction for the SnakeHead
 pub fn snake_input(keyboard_input: Res<ButtonInput<KeyCode>>, mut heads: Query<&mut SnakeHead>) {
     if let Some(mut head) = heads.iter_mut().next() {
         let key_pressed = keyboard_input.get_just_pressed().next();
 
+        // keep track of snake direction and last user input independently
         let next_dir: Direction = match key_pressed {
             Some(KeyCode::ArrowDown) => Direction::Down,
             Some(KeyCode::ArrowUp) => Direction::Up,
@@ -25,9 +61,11 @@ pub fn snake_input(keyboard_input: Res<ButtonInput<KeyCode>>, mut heads: Query<&
     }
 }
 
+/// First updates each SnakeSegment Position to follow where the SnakeHead went last tick
+/// Then updates the SnakeHead Position with the new Position this tick
 pub fn snake_movement(
     time: Res<Time>,
-    segments: ResMut<SnakeSegments>,
+    segments: Res<SnakeSegments>,
     mut game_over_writer: EventWriter<GameOverEvent>,
     mut last_tail_pos: ResMut<LastTailPosition>,
     mut heads: Query<(Entity, &mut SnakeHead)>,
@@ -35,24 +73,13 @@ pub fn snake_movement(
 ) {
     if let Some((head_entity, mut head)) = heads.iter_mut().next() {
         head.movement_timer.tick(time.delta());
-
         if !head.movement_timer.finished() {
             return;
         }
 
-        let snake_segment_positions = segments
-            .iter()
-            .map(|e| *positions.get_mut(*e).unwrap())
-            .collect::<Vec<Position>>();
+        let segment_positions = get_segment_positions(&segments, &mut positions);
 
-        snake_segment_positions
-            .iter()
-            /* create (Entity<SnakeSegment>, Position) */
-            .zip(segments.iter().skip(1)) 
-            /* get Entity for SnakeSegment from Vec<Position> and assign its associated Position to it */
-            .for_each(|(pos, segment)| {
-                *positions.get_mut(*segment).unwrap() = *pos
-            });
+        update_segment_positions(&segment_positions, &segments, &mut positions);
 
         let mut head_pos = positions.get_mut(head_entity).unwrap();
 
@@ -75,11 +102,11 @@ pub fn snake_movement(
             || head_pos.y < 0
             || head_pos.x as u32 == ARENA_WIDTH
             || head_pos.y as u32 == ARENA_HEIGHT
-            || snake_segment_positions.contains(&head_pos)
+            || segment_positions.contains(&head_pos)
         {
             game_over_writer.send(GameOverEvent);
         }
 
-        *last_tail_pos = LastTailPosition(Some(*snake_segment_positions.last().unwrap()));
+        *last_tail_pos = LastTailPosition(Some(*segment_positions.last().unwrap()));
     }
 }

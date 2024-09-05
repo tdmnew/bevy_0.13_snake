@@ -3,12 +3,17 @@ use bevy::prelude::*;
 use crate::components::{Position, Size};
 use crate::constants::{ARENA_HEIGHT, ARENA_WIDTH};
 
+/// Shifts coordinates as centre of grid (0,0) is at the centre of window, rather than top-left
+/// or bottom-left
 pub fn pos_translation(mut window: Query<&mut Window>, mut q: Query<(&Position, &mut Transform)>) {
     fn convert(pos: f32, bound_window: f32, bound_game: f32) -> f32 {
-        let tile_size = bound_window / bound_game; /* 64 if the window width is 1280 */
+        /* the tile would be 64 pixels if the window width is 1280 */
+        let tile_size = bound_window / bound_game;
 
-        /* the window size is divided in half because coord starts at bottom-left */
-        pos / bound_game * bound_window - (bound_window / 2.0) + (tile_size / 2.0)
+        /* (pos / bound_game * bound_window) = scales grid pos to window size */
+        /* (bound_window / 2.0) = subtract half window size to a centred origin in the window (e.g. 0,0) */
+        /* (tile_size / 2.0) - move to centre of cell, not the bottom-left */
+        pos * tile_size - (bound_window / 2.0) + (tile_size / 2.0)
     }
 
     let primary_window = window.single_mut();
@@ -18,7 +23,7 @@ pub fn pos_translation(mut window: Query<&mut Window>, mut q: Query<(&Position, 
             convert(pos.x as f32, primary_window.width(), ARENA_HEIGHT as f32),
             convert(pos.y as f32, primary_window.height(), ARENA_WIDTH as f32),
             0.0,
-        )
+        );
     }
 }
 

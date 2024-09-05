@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 
-use crate::systems::{events::*, movement::*, spawning::*, translation_scale::*};
 use crate::events::{GameOverEvent, GrowthEvent};
 use crate::resources::{FoodSpawnTimer, LastTailPosition, SnakeSegments};
+use crate::systems::{events::*, movement::*, spawning::*, translation_scale::*};
 
 mod components;
 mod constants;
